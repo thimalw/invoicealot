@@ -1,0 +1,19 @@
+{
+  "name": "invoicealot-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/syndicatelk/invoicealot.git"
+  },
+  "author": "Syndicate",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/syndicatelk/invoicealot/issues"
+  },
+  "homepage": "https://gitlab.com/syndicatelk/invoicealot#readme"
+}
