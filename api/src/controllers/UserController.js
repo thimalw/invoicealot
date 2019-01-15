@@ -1,12 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
-const db = require('../../db');
-
-const User = db.import(__dirname + '/../models/User');
+const User = require('../../db').model('user');
 
 const create = async (user) => {
-  // save user to database
   let err, savedUser;
   [err, savedUser] = await to(User.create(user), {
     fields: ['firstName', 'lastName', 'email', 'password']
@@ -28,7 +25,7 @@ const create = async (user) => {
 
 const authenticate = async ({ email, password }) => {
   let err, userInfo;
-  [err, userInfo] = await to(User.findOne({ email }));
+  [err, userInfo] = await to(User.findOne({ where: { email }}));
 
   if (err) {
     // logger.error(err); TODO: add logger
@@ -52,6 +49,5 @@ const authenticate = async ({ email, password }) => {
 
 module.exports = {
   create,
-  authenticate,
-  read
+  authenticate
 };
