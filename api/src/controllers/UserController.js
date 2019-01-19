@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
 const User = require('../../db').model('user');
+const OrganizationUsers = require('../../db').model('organizationUsers');
+const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
 
 const create = async (user) => {
   let err, savedUser;
@@ -47,7 +49,26 @@ const authenticate = async ({ email, password }) => {
   return makeRes(401, 'Unable to authenticate.', ['Invalid credentials.']);
 };
 
+const hasPermission = async (userId, organizationId, permission) => {
+  let err, organizationUser;
+  [err, organizationUser] = await to(OrganizationUsers.findOne({ where: { userId, organizationId }}));
+  
+  if (err || !organizationUser) {
+    return [err, false];
+  } else if (organizationUser.role === 'owner') {
+    return [null, true];
+  } else {
+    [err, orgUserPermissions] = await to(OrganizationUserPermissions.findOne({ where: { organizationUserId: organizationUser.id, permission }}));
+    if (err || !orgUserPermissions) {
+      return [err, false];
+    } else {
+      return [null, true];
+    }
+  }
+};
+
 module.exports = {
   create,
-  authenticate
+  authenticate,
+  hasPermission
 };

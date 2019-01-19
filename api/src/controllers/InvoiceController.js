@@ -41,6 +41,18 @@ const create = async (userId, invoice) => {
   });
 };
 
+const isInvoiceOwned = async (userId, invoiceId) => {
+  let err, invoice;
+  [err, invoice] = await to(Invoice.findByPk(invoiceId));
+
+  if (err || !invoice) {
+    return err, invoice;
+  }
+
+  return isOrganizationOwned(userId, invoice.organizationId);
+}
+
 module.exports = {
-  create
+  create,
+  isInvoiceOwned
 };

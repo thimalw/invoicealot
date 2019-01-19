@@ -10,4 +10,9 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
   res.status(organization.status).send(organization);
 });
 
+router.post('/:organizationId/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  const organizationUser = await OrganizationController.addUser(req.user.id, req.params.organizationId, req.body);
+  res.status(organizationUser.status).send(organizationUser);
+});
+
 module.exports = router;
