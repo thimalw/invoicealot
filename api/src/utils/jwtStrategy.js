@@ -6,7 +6,7 @@ const User = require('../../db').model('user');
 const opts = {};
 
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = 'SECRET_KEY'; // TODO
+opts.secretOrKey = process.env.JWT_SECRET;
 
 module.exports = new Strategy(opts, async (jwt_payload, done) => {
   let err, user;

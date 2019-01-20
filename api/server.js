@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -12,8 +13,7 @@ db.sync({ force: false }).then(() => {
 
   app.use('/v1', require('./src/routes'));
 
-  // TODO: get port from config/env
-  app.listen(3000, () => {
-    console.log('Server is listening on port 3000');
+  app.listen(process.env.PORT, () => {
+    console.log('Server is listening on port ' + process.env.PORT);
   });
 });
