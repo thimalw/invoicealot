@@ -1,12 +1,20 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
+const { makeRes, to, filterSqlErrors, makeErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const User = require('../../db').model('user');
 const OrganizationUsers = require('../../db').model('organizationUsers');
 const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
 
 const create = async (user) => {
+  if ('password' in user && 'passwordConfirmation' in user) {
+    if (user.password !== user.passwordConfirmation) {
+      return makeRes(400, 'Unable to register new user', ['Password confirmation doeesn\'t match.']);
+    }
+  } else {
+    return makeRes(400, 'Unable to register new user', ['Password and password confirmation are required.']);
+  }
+  
   let err, savedUser;
   [err, savedUser] = await to(User.create(user), {
     fields: ['firstName', 'lastName', 'email', 'password']
@@ -15,7 +23,7 @@ const create = async (user) => {
   if (err) {
     logger.error(err);
     const errorMessages = filterSqlErrors(err);
-    return makeRes(401, 'Unable to register new user.', errorMessages);
+    return makeRes(400, 'Unable to register new user.', errorMessages);
   }
 
   return makeRes(200, 'User registered.', {
