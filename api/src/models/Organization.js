@@ -8,10 +8,6 @@ module.exports = (sequelize, DataTypes) => {
           args: true,
           msg: 'Organization name is required.'
         },
-        notNull: {
-          args: true,
-          msg: 'Organization name is required.'
-        },
         len: {
           args: [1, 100],
           msg: 'Organization name must be between 1 to 100 characters.'

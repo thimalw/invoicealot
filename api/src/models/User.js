@@ -10,10 +10,6 @@ module.exports = (sequelize, DataTypes) => {
             args: true,
             msg: 'First name is required.'
           },
-          notNull: {
-            args: true,
-            msg: 'First name is required.'
-          },
           len: {
             args: [1, 60],
             msg: 'First name must be between 1 to 60 characters.'
@@ -25,10 +21,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         notEmpty: {
-          args: true,
-          msg: 'Last name is required.'
-        },
-        notNull: {
           args: true,
           msg: 'Last name is required.'
         },
@@ -53,10 +45,6 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: {
           args: true,
           msg: 'Email is required.'
-        },
-        notNull: {
-          args: true,
-          msg: 'Email is required.'
         }
       }
     },
@@ -69,10 +57,6 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Password must be longer than 8 characters.'
         },
         notEmpty: {
-          args: true,
-          msg: 'Password is required.'
-        },
-        notNull: {
           args: true,
           msg: 'Password is required.'
         }

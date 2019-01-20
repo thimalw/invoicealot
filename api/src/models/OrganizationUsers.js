@@ -13,10 +13,6 @@ module.exports = (sequelize, DataTypes) => {
         isIn: {
           args: [['owner', 'staff']],
           msg: 'Invalid user role.'
-        },
-        notNull: {
-          args: true,
-          msg: 'User role is required.'
         }
       }
     }

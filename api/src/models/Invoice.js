@@ -7,10 +7,6 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: {
           args: true,
           msg: 'Invoice number is required.'
-        },
-        notNull: {
-          args: true,
-          msg: 'Invoice number is required.'
         }
       }
     },
@@ -21,10 +17,6 @@ module.exports = (sequelize, DataTypes) => {
         isIn: {
           args: [['invoice', 'estimate']],
           msg: 'Invalid invoice type.'
-        },
-        notNull: {
-          args: true,
-          msg: 'Invoice type is required.'
         }
       }
     },
@@ -66,10 +58,6 @@ module.exports = (sequelize, DataTypes) => {
         isIn: {
           args: [['saved', 'draft']],
           msg: 'Invalid invoice state.'
-        },
-        notNull: {
-          args: true,
-          msg: 'Invoice state is required.'
         }
       }
     }
