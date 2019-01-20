@@ -1,13 +1,15 @@
 const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
+const logger = require('../utils/logger');
 const { isOrganizationOwned } = require('./OrganizationController');
 const Invoice = require('../../db').model('invoice');
+const InvoiceItems = require('../../db').model('invoiceItems');
 
 const create = async (userId, invoice) => {
   let err, organizationOwned;
   [err, organizationOwned] = await to(isOrganizationOwned(userId, invoice.organizationId));
 
   if (err) {
-    // logger.error(err); TODO: add logger
+    logger.error(err);
     return makeRes(500, 'Unable to create new invoice.', ['Unable to create new invoice.']);
   }
 
@@ -29,7 +31,7 @@ const create = async (userId, invoice) => {
   });
 
   if (err) {
-    // logger.error(err); TODO: add logger
+    logger.error(err);
     const errorMessages = filterSqlErrors(err);
     return makeRes(401, 'Unable to create new invoice.', errorMessages);
   }
@@ -41,18 +43,6 @@ const create = async (userId, invoice) => {
   });
 };
 
-const isInvoiceOwned = async (userId, invoiceId) => {
-  let err, invoice;
-  [err, invoice] = await to(Invoice.findByPk(invoiceId));
-
-  if (err || !invoice) {
-    return err, invoice;
-  }
-
-  return isOrganizationOwned(userId, invoice.organizationId);
-}
-
 module.exports = {
-  create,
-  isInvoiceOwned
+  create
 };

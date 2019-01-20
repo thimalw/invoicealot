@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
+const logger = require('../utils/logger');
 const User = require('../../db').model('user');
 const OrganizationUsers = require('../../db').model('organizationUsers');
 const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
@@ -12,7 +13,7 @@ const create = async (user) => {
   });
 
   if (err) {
-    // logger.error(err); TODO: add logger
+    logger.error(err);
     const errorMessages = filterSqlErrors(err);
     return makeRes(401, 'Unable to register new user.', errorMessages);
   }
@@ -30,15 +31,15 @@ const authenticate = async ({ email, password }) => {
   [err, userInfo] = await to(User.findOne({ where: { email }}));
 
   if (err) {
-    // logger.error(err); TODO: add logger
+    logger.error(err);
     const errorMessages = filterSqlErrors(err);
     return makeRes(401, 'Unable to authenticate.', errorMessages);
   }
 
   if (userInfo && bcrypt.compareSync(password, userInfo.password)) {
-    const secret = 'SECRET_KEY'; // TODO
+    const secret = process.env.JWT_SECRET;
     const opts = {
-      expiresIn: 86400 // 24 hours // TODO: use env var
+      expiresIn: process.env.JWT_EXPIRE
     };
 
     const token = jwt.sign({ id: userInfo.id }, secret, opts);
