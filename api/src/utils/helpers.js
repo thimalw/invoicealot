@@ -14,9 +14,13 @@ const to = promise => {
 const filterSqlErrors = err => {
   var errorMessages = [];
 
-  err.errors.forEach(error => {
-    errorMessages.push(error.message);
-  });
+  if ('errors' in err) {
+    err.errors.forEach(error => {
+      if (error.validatorKey !== null) {
+        errorMessages.push(error.message);
+      }
+    });
+  }
 
   return errorMessages;
 }
