@@ -2,7 +2,17 @@ module.exports = (sequelize, DataTypes) => {
   return sequelize.define('invoice', {
     number: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        notEmpty: {
+          args: true,
+          msg: 'Invoice number is required.'
+        },
+        notNull: {
+          args: true,
+          msg: 'Invoice number is required.'
+        }
+      }
     },
     type: {
       type: DataTypes.STRING,
@@ -11,12 +21,16 @@ module.exports = (sequelize, DataTypes) => {
         isIn: {
           args: [['invoice', 'estimate']],
           msg: 'Invalid invoice type.'
+        },
+        notNull: {
+          args: true,
+          msg: 'Invoice type is required.'
         }
       }
     },
     dueDate: {
       type: DataTypes.DATEONLY,
-      allowNull: false,
+      allowNull: true,
       validate: {
         isDate: {
           args: true,
@@ -52,6 +66,10 @@ module.exports = (sequelize, DataTypes) => {
         isIn: {
           args: [['saved', 'draft']],
           msg: 'Invalid invoice state.'
+        },
+        notNull: {
+          args: true,
+          msg: 'Invoice state is required.'
         }
       }
     }

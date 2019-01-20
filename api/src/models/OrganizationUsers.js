@@ -12,7 +12,11 @@ module.exports = (sequelize, DataTypes) => {
       validate: {
         isIn: {
           args: [['owner', 'staff']],
-          msg: 'Invalid user level.'
+          msg: 'Invalid user role.'
+        },
+        notNull: {
+          args: true,
+          msg: 'User role is required.'
         }
       }
     }
