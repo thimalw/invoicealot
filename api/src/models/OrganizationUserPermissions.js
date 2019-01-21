@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         isIn: {
-          args: [['invoice.create', 'invoice.delete', 'customer.create', 'customer.delete']],
+          args: [['invoice', 'user', 'customer', 'products']],
           msg: 'Invalid permission.'
         }
       }
