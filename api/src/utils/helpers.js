@@ -10,23 +10,34 @@ const to = promise => {
   }, (err => [err]));
 };
 
+const resErrors = errors => {
+  return {
+    errors: {
+      allFields: errors
+    }
+  };
+};
+
 // return client safe error messages from Sequelize err
 const filterSqlErrors = err => {
-  var errorMessages = [];
+  var errorMessages = {};
 
   if ('errors' in err) {
     err.errors.forEach(error => {
-      if (error.validatorKey !== null) {
-        errorMessages.push(error.message);
+      if (error.validatorKey !== null && error.path !== null) {
+        errorMessages = { ...errorMessages, [error.path]: error.message };
       }
     });
   }
 
-  return errorMessages;
+  return {
+    errors: errorMessages
+  };
 }
 
 module.exports = {
   makeRes,
   to,
+  resErrors,
   filterSqlErrors
 };

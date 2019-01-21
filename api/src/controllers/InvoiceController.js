@@ -1,20 +1,20 @@
-const { makeRes, to, filterSqlErrors } = require('../utils/helpers');
+const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
-const { isOrganizationOwned } = require('./OrganizationController');
+const { hasPermission } = require('./UserController');
 const Invoice = require('../../db').model('invoice');
 const InvoiceItems = require('../../db').model('invoiceItems');
 
 const create = async (userId, invoice) => {
-  let err, organizationOwned;
-  [err, organizationOwned] = await to(isOrganizationOwned(userId, invoice.organizationId));
-
+  const generalError = 'Unable to create new invoice.';
+  
+  let err, hasPermissionRes;
+  [err, hasPermissionRes] = await hasPermission(userId, invoice.organizationId, 'invoice');
+  
   if (err) {
     logger.error(err);
-    return makeRes(500, 'Unable to create new invoice.', ['Unable to create new invoice.']);
-  }
-
-  if (!organizationOwned) {
-    return makeRes(404, 'Unable to create new invoice.', ['Organization not found']);
+    return makeRes(500, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+  } else if (!hasPermissionRes) {
+    return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to create invoices this organization.']));
   }
   
   let savedInvoice;
@@ -32,8 +32,8 @@ const create = async (userId, invoice) => {
 
   if (err) {
     logger.error(err);
-    const errorMessages = filterSqlErrors(err);
-    return makeRes(401, 'Unable to create new invoice.', errorMessages);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(401, generalError, fieldErrors);
   }
 
   return makeRes(200, 'Invoice created successfully.', {
