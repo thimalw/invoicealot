@@ -25,7 +25,11 @@ const filterSqlErrors = err => {
   if ('errors' in err) {
     err.errors.forEach(error => {
       if (error.validatorKey !== null && error.path !== null) {
-        errorMessages = { ...errorMessages, [error.path]: error.message };
+        if ( typeof errorMessages[error.path] === 'undefined') {
+          errorMessages = { ...errorMessages, [error.path]: [error.message] };
+        } else {
+          errorMessages[error.path].push(error.message);
+        }
       }
     });
   }

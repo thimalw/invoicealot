@@ -6,14 +6,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-          notEmpty: {
-            args: true,
-            msg: 'First name is required.'
-          },
-          len: {
-            args: [1, 60],
-            msg: 'First name must be between 1 to 60 characters.'
-          }
+        notEmpty: {
+          args: true,
+          msg: 'First name is required.'
+        },
+        len: {
+          args: [1, 60],
+          msg: 'First name must be between 1 to 60 characters.'
+        }
       }
     },
     lastName: {
