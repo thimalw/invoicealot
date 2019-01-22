@@ -2,7 +2,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const db = require('../../db');
 const User = require('../../db').model('user');
+const UserEmails = require('../../db').model('userEmails');
 const OrganizationUsers = require('../../db').model('organizationUsers');
 const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
 
@@ -18,10 +20,22 @@ const create = async (user) => {
   if (errorMessages.length) {
     return makeRes(400, 'Unable to register new user.', resErrors(errorMessages));
   } else {
+
     let err, savedUser;
-    [err, savedUser] = await to(User.create(user), {
-      fields: ['firstName', 'lastName', 'email', 'password']
-    });
+    [err, savedUser] = await to(db.transaction(t => {
+      return User.create(user, {
+        fields: ['firstName', 'lastName', 'password'],
+        transaction: t
+      }).then(newUser => {
+        return UserEmails.create({
+          userId: newUser.id,
+          email: user.email,
+          primary: '1'
+        }, {
+          transaction: t
+        });
+      });
+    }));
 
     if (err) {
       logger.error(err);
@@ -31,7 +45,7 @@ const create = async (user) => {
 
     return makeRes(200, 'User registered.', {
       user: {
-        id: savedUser.id,
+        id: savedUser.userId,
         email: savedUser.email
       }
     });
@@ -110,8 +124,15 @@ const updatePassword = async (userId, user) => {
 };
 
 const authenticate = async ({ email, password }) => {
-  let err, userInfo;
-  [err, userInfo] = await to(User.findOne({ where: { email }}));
+  let err, userEmail;
+  [err, userEmail] = await to(UserEmails.findOne({
+    where: {
+      email
+    },
+    include: [{
+      model: User
+    }]
+  }));
 
   if (err) {
     logger.error(err);
@@ -119,13 +140,13 @@ const authenticate = async ({ email, password }) => {
     return makeRes(401, 'Unable to authenticate.', fieldErrors);
   }
 
-  if (userInfo && bcrypt.compareSync(password, userInfo.password)) {
+  if (userEmail && userEmail.user && bcrypt.compareSync(password, userEmail.user.password)) {
     const secret = process.env.JWT_SECRET;
     const opts = {
       expiresIn: parseInt(process.env.JWT_EXPIRE)
     };
 
-    const token = jwt.sign({ id: userInfo.id }, secret, opts);
+    const token = jwt.sign({ id: userEmail.user.id }, secret, opts);
 
     return makeRes(200, 'Authentication successful.', { token });
   }

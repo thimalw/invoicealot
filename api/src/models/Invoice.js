@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     state: {
       type: DataTypes.STRING,
-      default: 'draft',
+      defaultValue: 'draft',
       allowNull: false,
       validate: {
         isIn: {

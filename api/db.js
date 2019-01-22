@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize');
+const { to } = require('./src/utils/helpers');
 
 const db = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
   host: process.env.DB_HOST,
@@ -22,11 +23,19 @@ const OrganizationUsers = db.import('./src/models/OrganizationUsers');
 const Invoice = db.import('./src/models/Invoice');
 const InvoiceItems = db.import('./src/models/InvoiceItems');
 const Organization = db.import('./src/models/Organization');
+const UserEmails = db.import('./src/models/UserEmails');
 const User = db.import('./src/models/User');
+
+// Model associations
+User.hasMany(UserEmails);
+UserEmails.belongsTo(User);
 
 User.belongsToMany(Organization, { through: OrganizationUsers });
 Organization.belongsToMany(User, { through: OrganizationUsers });
+
 Organization.hasMany(Invoice);
+Invoice.belongsTo(Organization);
+
 OrganizationUsers.hasMany(OrganizationUserPermissions);
 Invoice.hasMany(InvoiceItems);
   
