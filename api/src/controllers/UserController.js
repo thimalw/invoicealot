@@ -1,10 +1,14 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const mailer = require('../utils/mailer');
+
 const db = require('../../db');
 const User = require('../../db').model('user');
 const UserEmails = require('../../db').model('userEmails');
+const UserEmailVerifications = require('../../db').model('userEmailVerifications');
 const OrganizationUsers = require('../../db').model('organizationUsers');
 const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
 
@@ -20,20 +24,38 @@ const create = async (user) => {
   if (errorMessages.length) {
     return makeRes(400, 'Unable to register new user.', resErrors(errorMessages));
   } else {
-
+    const emailHash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
     let err, savedUser;
     [err, savedUser] = await to(db.transaction(t => {
       return User.create(user, {
         fields: ['firstName', 'lastName', 'password'],
         transaction: t
-      }).then(newUser => {
-        return UserEmails.create({
+      }).then(async newUser => {
+        const newUserEmail = await UserEmails.create({
           userId: newUser.id,
           email: user.email,
           primary: '1'
         }, {
           transaction: t
         });
+
+        return {
+          ...newUser,
+          userEmails: newUserEmail
+        }
+      }).then(async newUser => {
+        const newUserEmailVerification = await UserEmailVerifications.create({
+          userEmailId: newUser.userEmail.id,
+          hash: emailHash
+        }, {
+          transaction: t
+        });
+
+        return {
+          ...newUser,
+          userEmailVerifications: newUserEmailVerification
+        }
       });
     }));
 
@@ -43,10 +65,17 @@ const create = async (user) => {
       return makeRes(400, 'Unable to register new user.', fieldErrors);
     }
 
+    let mailSent;
+    [err, mailSent] = await to(mailer.mailUser(savedUser.dataValues.id, 'user.create', { emailHash }));
+
+    if (err) {
+      console.log(err);
+    }
+
     return makeRes(200, 'User registered.', {
       user: {
-        id: savedUser.userId,
-        email: savedUser.email
+        id: savedUser.dataValues.id,
+        email: savedUser.userEmails.dataValues.email
       }
     });
   }

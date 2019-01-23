@@ -1,5 +1,3 @@
-// Helper functions
-
 const makeRes = (status, message = null, data = null) => {
   return { status, message, data };
 };

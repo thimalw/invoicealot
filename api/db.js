@@ -23,12 +23,15 @@ const OrganizationUsers = db.import('./src/models/OrganizationUsers');
 const Invoice = db.import('./src/models/Invoice');
 const InvoiceItems = db.import('./src/models/InvoiceItems');
 const Organization = db.import('./src/models/Organization');
+const UserEmailVerifications = db.import('./src/models/UserEmailVerifications');
 const UserEmails = db.import('./src/models/UserEmails');
 const User = db.import('./src/models/User');
 
 // Model associations
 User.hasMany(UserEmails);
 UserEmails.belongsTo(User);
+
+UserEmailVerifications.belongsTo(UserEmails);
 
 User.belongsToMany(Organization, { through: OrganizationUsers });
 Organization.belongsToMany(User, { through: OrganizationUsers });
