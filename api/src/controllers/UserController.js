@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const mailer = require('../utils/mailer');
-
 const db = require('../../db');
+
 const User = require('../../db').model('user');
 const UserEmails = require('../../db').model('userEmails');
 const UserEmailVerifications = require('../../db').model('userEmailVerifications');
@@ -24,7 +24,7 @@ const create = async (user) => {
   if (errorMessages.length) {
     return makeRes(400, 'Unable to register new user.', resErrors(errorMessages));
   } else {
-    const emailHash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const emailToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
     let err, savedUser;
     [err, savedUser] = await to(db.transaction(t => {
@@ -46,8 +46,8 @@ const create = async (user) => {
         }
       }).then(async newUser => {
         const newUserEmailVerification = await UserEmailVerifications.create({
-          userEmailId: newUser.userEmail.id,
-          hash: emailHash
+          userEmailId: newUser.userEmails.id,
+          token: emailToken
         }, {
           transaction: t
         });
@@ -66,12 +66,12 @@ const create = async (user) => {
     }
 
     let mailSent;
-    [err, mailSent] = await to(mailer.mailUser(savedUser.dataValues.id, 'user.create', { emailHash }));
+    [err, mailSent] = await to(mailer.mailUser(savedUser.dataValues.id, 'user.create', { emailToken }));
 
     if (err) {
       console.log(err);
     }
-
+ß
     return makeRes(200, 'User registered.', {
       user: {
         id: savedUser.dataValues.id,
@@ -145,7 +145,7 @@ const updatePassword = async (userId, user) => {
     if (err) {
       logger.error(err);
       const fieldErrors = filterSqlErrors(err);
-      return makeRes(400, 'Unable to update  the password.', fieldErrors);
+      return makeRes(400, 'Unable to update the password.', fieldErrors);
     }
 
     return makeRes(200, 'Successfully updated the password');
@@ -183,6 +183,81 @@ const authenticate = async ({ email, password }) => {
   return makeRes(401, 'Unable to authenticate.', resErrors(['Invalid credentials.']));
 };
 
+const verifyEmail = async (userId, userEmailId, { token }) => {
+  if (typeof token === 'undefined') {
+    return makeRes(400, 'Unable to verify email address.', resErrors(['Invalid verification token.']));
+  }
+
+  // TODO: find a way to get userEmail and userEmailVerification in a single step.
+  // include option didn't work
+  let err, userEmailVerification;
+  [err, userEmailVerification] = await to(UserEmailVerifications.findOne({
+    where: {
+      userEmailId
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(400, 'Unable to verify email address.');
+  }
+
+  if (!userEmailVerification) {
+    return makeRes(400, 'Unable to verify email address.');
+  }
+
+  let userEmail;
+  [err, userEmail] = await to(UserEmails.findByPk(userEmailId));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(400, 'Unable to verify email address.');
+  }
+
+  if (!userEmail || userEmailVerification.token !== token || userEmail.userId != userId) {
+    return makeRes(400, 'Unable to verify email address.');
+  }
+
+  let deletedEmailVerification;
+  if (!userEmail.verified) {
+    [err, deletedEmailVerification] = await to(db.transaction(t => {
+      return UserEmailVerifications.destroy({
+        where: {
+          userEmailId: userEmail.id,
+          token
+        },
+        transaction: t
+      }).then(updatedUserEmail => {
+        return UserEmails.update({ verified: '1' }, {
+          where: {
+            id: userEmail.id
+          },
+          fields: ['verified'],
+          transaction: t
+        });
+      });
+    }));
+
+    if (err) {
+      logger.error(err);
+      return makeRes(400, 'Unable to verify email address.');
+    }
+  } else {
+    [err, deletedEmailVerification] = await to(UserEmailVerifications.destroy({
+      where: {
+        userEmailId: userEmail.id
+      }
+    }));
+
+    if (err) {
+      logger.error(err);
+      return makeRes(400, 'Unable to verify email address.');
+    }
+  }
+
+  return makeRes(200, 'Successfully verified email address.');
+};
+
 const hasPermission = async (userId, organizationId, permission) => {
   let err, organizationUser;
   [err, organizationUser] = await to(OrganizationUsers.findOne({ where: { userId, organizationId }}));
@@ -206,5 +281,6 @@ module.exports = {
   update,
   updatePassword,
   authenticate,
+  verifyEmail,
   hasPermission
 };

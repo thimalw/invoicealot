@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('userEmailVerifications', {
-    hash: {
+    token: {
       type: DataTypes.STRING,
       allowNull: false
     }

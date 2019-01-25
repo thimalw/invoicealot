@@ -6,13 +6,13 @@ const initTemplate = info => {
   template.html = `<p>Hi ${info.firstName}</p>
 <p>Welcome to your new ${process.env.APP_NAME} account! Just click on the verification link below and you'll be ready to start making invoices.</p>
 
-<p><a href="${process.env.CLIENT_URL}/verify/${info.emailHash}">Verify Email</a></p>`;
+<p><a href="${process.env.CLIENT_URL}/verify/${info.emailToken}">Verify Email</a></p>`;
 
   template.text = `Hi ${info.firstName}.
 
 Welcome to your new ${process.env.APP_NAME} account! Just click on the verification link below and you'll be ready to start making invoices.
 
-${process.env.CLIENT_URL}/verify/${info.emailHash}`;
+${process.env.CLIENT_URL}/verify/${info.emailToken}`;
   
   return template;
 };
