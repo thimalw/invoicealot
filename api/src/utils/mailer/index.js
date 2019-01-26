@@ -60,9 +60,7 @@ const sendMail = async (mailTo, subject, html, text) => {
     html
   };
 
-  console.log('SENDING');
   let info = await transporter.sendMail(mailOptions);
-  console.log('SENT');
 
   return info;
 }
