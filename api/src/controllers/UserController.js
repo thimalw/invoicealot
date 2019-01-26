@@ -71,7 +71,7 @@ const create = async (user) => {
     if (err) {
       console.log(err);
     }
-ß
+
     return makeRes(200, 'User registered.', {
       user: {
         id: savedUser.dataValues.id,
