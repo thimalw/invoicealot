@@ -3,6 +3,8 @@ const passport = require('passport');
 const jwtStrategy = require('../utils/jwtStrategy');
 const UserController = require('../controllers/UserController');
 
+passport.use(jwtStrategy);
+
 router.post('/', async (req, res) => {
   const user = await UserController.create(req.body);
   res.status(user.status || 500).send(user);
