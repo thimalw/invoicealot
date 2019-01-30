@@ -9,6 +9,7 @@ const db = require('../../db');
 const User = require('../../db').model('user');
 const UserEmails = require('../../db').model('userEmails');
 const UserEmailVerifications = require('../../db').model('userEmailVerifications');
+const Organization = require('../../db').model('organization');
 const OrganizationUsers = require('../../db').model('organizationUsers');
 const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
 
@@ -174,10 +175,30 @@ const authenticate = async ({ email, password }) => {
     const opts = {
       expiresIn: parseInt(process.env.JWT_EXPIRE)
     };
-
     const token = jwt.sign({ id: userEmail.user.id }, secret, opts);
 
-    return makeRes(200, 'Authentication successful.', { token });
+    let organizations;
+    [err, organizations] = await to(Organization.findAll({
+      include: [{
+        model: User,
+        where: {
+          id: userEmail.user.id
+        },
+        attributes: []
+      }],
+      attributes: [
+        'id',
+        'name'
+      ]
+    }));
+
+    if (err) {
+      logger.error(err);
+      const fieldErrors = filterSqlErrors(err);
+      return makeRes(401, 'Unable to authenticate.', fieldErrors);
+    }
+
+    return makeRes(200, 'Authentication successful.', { token, organizations });
   }
 
   return makeRes(401, 'Unable to authenticate.', resErrors(['Invalid credentials.']));
