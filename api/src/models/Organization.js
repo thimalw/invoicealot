@@ -13,6 +13,16 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Organization name must be between 1 to 100 characters.'
         }
       }
+    },
+    logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isUrl: {
+          args: true,
+          msg: 'Invalid organization logo.'
+        }
+      }
     }
   });
 };
