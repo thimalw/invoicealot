@@ -13,7 +13,7 @@ const create = async (userId, organization) => {
   if (err) {
     logger.error(err);
     const fieldErrors = filterSqlErrors(err);
-    return makeRes(401, 'Unable to create new organization.', fieldErrors);
+    return makeRes(400, 'Unable to create new organization.', fieldErrors);
   } else if (!user) {
     return makeRes(400, 'Unable to create new organization.', resErrors(['Invalid user.']));
   }
@@ -23,14 +23,14 @@ const create = async (userId, organization) => {
   if (err) {
     logger.error(err);
     const fieldErrors = filterSqlErrors(err);
-    return makeRes(401, 'Unable to create new organization.', fieldErrors);
+    return makeRes(400, 'Unable to create new organization.', fieldErrors);
   }
   
   [err, savedOrgUser] = await to(user.addOrganization(savedOrganization, { through: { role: 'owner' }}));
   if (err) {
     logger.error(err);
     const fieldErrors = filterSqlErrors(err);
-    return makeRes(401, 'Unable to create new organization.', fieldErrors);
+    return makeRes(400, 'Unable to create new organization.', fieldErrors);
   }
 
   return makeRes(200, 'Organization created successfully.', {
@@ -40,6 +40,67 @@ const create = async (userId, organization) => {
   });
 };
 
+const list = async (userId) => {
+  let err, organizations;
+  [err, organizations] = await to(Organization.findAll({
+    include: [{
+      model: User,
+      where: {
+        id: userId
+      },
+      attributes: []
+    }],
+    attributes: [
+      'id',
+      'name',
+      'logo'
+    ]
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, 'Unable to retrieve organizations.', fieldErrors);
+  }
+
+  return makeRes(200, 'Organizations retrieved.', { organizations });
+};
+
+const get = async (userId, organizationId) => {
+  let err, organization;
+  [err, organization] = await to(Organization.findByPk(organizationId, {
+    include: [
+      {
+        model: User,
+        where: {
+          id: userId
+        },
+        attributes: ['id'],
+        through: {
+          attributes: ['role'],
+        }
+      }
+    ],
+    attributes: [
+      'id',
+      'name',
+      'logo'
+    ]
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, 'Unable to retrieve organization details.', fieldErrors);
+  }
+
+  if (!organization) {
+    return makeRes(404, 'Organization not found.');
+  }
+
+  return makeRes(200, 'Organization details retrieved.', { organization });
+};
+
 const addUser = async (userId, organizationId, organizationUser) => {
   const generalError = 'Unable to add user to the organization.';
   
@@ -47,7 +108,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
   [err, hasPermissionRes] = await hasPermission(userId, organizationId, 'organization.user');
   if (err) {
     logger.error(err);
-    return makeRes(401, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+    return makeRes(400, generalError, resErrors(['Please try again. If the error continues, contact support.']));
   } else if (!hasPermissionRes) {
     return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to add new users to this organization.']));
   }
@@ -57,7 +118,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
     [err, isOrganizationOwned] = isOrganizationOwned(userId, organizationId);
     if (err) {
       logger.error(err);
-      return makeRes(401, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+      return makeRes(400, generalError, resErrors(['Please try again. If the error continues, contact support.']));
     } else if (!isOrganizationOwned) {
       return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to add an owner to this organization.']));
     }
@@ -67,7 +128,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
   [err, organization] = await to(Organization.findByPk(organizationId));
   if (err) {
     logger.error(err);
-    return makeRes(401, generalError, resErrors(['Please try again. If the errolikr continues, contact support.']));
+    return makeRes(400, generalError, resErrors(['Please try again. If the errolikr continues, contact support.']));
   } else if (!organization) {
     return makeRes(404, generalError, resErrors(['Organization not found.']));
   }
@@ -76,7 +137,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
   [err, user] = await to(User.findByPk(organizationUser.userId));
   if (err) {
     logger.error(err);
-    return makeRes(401, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+    return makeRes(400, generalError, resErrors(['Please try again. If the error continues, contact support.']));
   } else if (!user) {
     return makeRes(404, generalError, resErrors(['User not found.']));
   }
@@ -86,7 +147,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
   if (err) {
     logger.error(err);
     const fieldErrors = filterSqlErrors(err);
-    return makeRes(401, generalError, fieldErrors);
+    return makeRes(400, generalError, fieldErrors);
   }
 
   // insert custom permissions if user is not an owner
@@ -141,6 +202,8 @@ const isOrganizationOwned = async (userId, organizationId) => {
 
 module.exports = {
   create,
+  list,
+  get,
   addUser,
   isOrganizationOwned
 };
