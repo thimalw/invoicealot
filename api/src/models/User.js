@@ -43,6 +43,21 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Password is required.'
         }
       }
+    },
+    credits: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: '0.00',
+      validate: {
+        isDecimal: {
+          args: true,
+          msg: 'Invalid user credit value.'
+        },
+        notEmpty: {
+          args: true,
+          msg: 'Invalid user credit value.'
+        }
+      }
     }
   }, {
     hooks: {
