@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('invoiceItems', {
+  return sequelize.define('invoiceItem', {
     name: {
       type: DataTypes.STRING,
       allowNull: false
@@ -18,7 +18,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       validate: {
-        isNumeric: {
+        isDecimal: {
+          args: true,
+          msg: 'Invalid price.'
+        },
+        notEmpty: {
           args: true,
           msg: 'Invalid price.'
         }

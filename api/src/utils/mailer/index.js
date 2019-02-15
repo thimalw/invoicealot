@@ -1,12 +1,12 @@
 const nodemailer = require('nodemailer');
 const { to } = require('../helpers');
 const User = require('../../../db').model('user');
-const UserEmails = require('../../../db').model('userEmails');
+const UserEmail = require('../../../db').model('userEmail');
 
 const mailUser = async (userId, templateName, info) => {
   let [err, user] = await to(User.findByPk(userId, {
     include: [{
-      model: UserEmails,
+      model: UserEmail,
       where: {
         primary: '1'
       }
@@ -31,7 +31,7 @@ const mailUser = async (userId, templateName, info) => {
 
   let mailSent;
   mailSent = await sendMail(
-    `${user.firstName} ${user.lastName} <${user.userEmails[0].email}>`,
+    `${user.firstName} ${user.lastName} <${user.userEmail[0].email}>`,
     template.subject + ' - ' + process.env.APP_NAME,
     template.html,
     template.text

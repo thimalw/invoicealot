@@ -2,8 +2,8 @@ const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const Organization = require('../../db').model('organization');
 const User = require('../../db').model('user');
-const OrganizationUsers = require('../../db').model('organizationUsers');
-const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
+const OrganizationUser = require('../../db').model('organizationUser');
+const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
 const { hasPermission } = require('./UserController');
 
 const create = async (userId, organization) => {
@@ -156,7 +156,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
 
     let deletedRows;
     // TODO: fix hard coded array access. might throw errors
-    [err, deletedRows] = await to(OrganizationUserPermissions.destroy({ where: { organizationUserId: savedOrgUser[0][0].id }}));
+    [err, deletedRows] = await to(OrganizationUserPermission.destroy({ where: { organizationUserId: savedOrgUser[0][0].id }}));
     if (err) {
       return makeRes(200, 'Added user to the organization. But errors occured while saving user permissions.', {
         organizationUser: {
@@ -169,7 +169,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
     var savedPermission;
     for (permission of organizationUser.permissions) {
       // TODO: fix hard coded array access. might throw errors
-      [err, savedPermission] = await to(OrganizationUserPermissions.create({ organizationUserId: savedOrgUser[0][0].id, permission }));
+      [err, savedPermission] = await to(OrganizationUserPermission.create({ organizationUserId: savedOrgUser[0][0].id, permission }));
       if (err) {
         permissionErr = true;
       }
@@ -195,7 +195,7 @@ const addUser = async (userId, organizationId, organizationUser) => {
 
 const isOrganizationOwned = async (userId, organizationId) => {
   let err, result;
-  [err, result] = await to(OrganizationUsers.findOne({ where: { organizationId, userId, role: 'owner' }}));
+  [err, result] = await to(OrganizationUser.findOne({ where: { organizationId, userId, role: 'owner' }}));
 
   return err, result;
 }

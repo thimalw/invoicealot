@@ -7,11 +7,11 @@ const mailer = require('../utils/mailer');
 const db = require('../../db');
 
 const User = require('../../db').model('user');
-const UserEmails = require('../../db').model('userEmails');
-const UserEmailVerifications = require('../../db').model('userEmailVerifications');
+const UserEmail = require('../../db').model('userEmail');
+const UserEmailVerification = require('../../db').model('userEmailVerification');
 const Organization = require('../../db').model('organization');
-const OrganizationUsers = require('../../db').model('organizationUsers');
-const OrganizationUserPermissions = require('../../db').model('organizationUserPermissions');
+const OrganizationUser = require('../../db').model('organizationUser');
+const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
 
 const create = async (user) => {
   var errorMessages = [];
@@ -33,7 +33,7 @@ const create = async (user) => {
         fields: ['firstName', 'lastName', 'password'],
         transaction: t
       }).then(async newUser => {
-        const newUserEmail = await UserEmails.create({
+        const newUserEmail = await UserEmail.create({
           userId: newUser.id,
           email: user.email,
           primary: '1'
@@ -43,11 +43,11 @@ const create = async (user) => {
 
         return {
           ...newUser,
-          userEmails: newUserEmail
+          userEmail: newUserEmail
         }
       }).then(async newUser => {
-        const newUserEmailVerification = await UserEmailVerifications.create({
-          userEmailId: newUser.userEmails.id,
+        const newUserEmailVerification = await UserEmailVerification.create({
+          userEmailId: newUser.userEmail.id,
           token: emailToken
         }, {
           transaction: t
@@ -55,7 +55,7 @@ const create = async (user) => {
 
         return {
           ...newUser,
-          userEmailVerifications: newUserEmailVerification
+          userEmailVerification: newUserEmailVerification
         }
       });
     }));
@@ -76,7 +76,7 @@ const create = async (user) => {
     return makeRes(200, 'User registered.', {
       user: {
         id: savedUser.dataValues.id,
-        email: savedUser.userEmails.dataValues.email
+        email: savedUser.userEmail.dataValues.email
       }
     });
   }
@@ -155,7 +155,7 @@ const updatePassword = async (userId, user) => {
 
 const authenticate = async ({ email, password }) => {
   let err, userEmail;
-  [err, userEmail] = await to(UserEmails.findOne({
+  [err, userEmail] = await to(UserEmail.findOne({
     where: {
       email
     },
@@ -212,7 +212,7 @@ const verifyEmail = async (userId, userEmailId, { token }) => {
   // TODO: find a way to get userEmail and userEmailVerification in a single step.
   // include option didn't work
   let err, userEmailVerification;
-  [err, userEmailVerification] = await to(UserEmailVerifications.findOne({
+  [err, userEmailVerification] = await to(UserEmailVerification.findOne({
     where: {
       userEmailId
     }
@@ -228,7 +228,7 @@ const verifyEmail = async (userId, userEmailId, { token }) => {
   }
 
   let userEmail;
-  [err, userEmail] = await to(UserEmails.findByPk(userEmailId));
+  [err, userEmail] = await to(UserEmail.findByPk(userEmailId));
 
   if (err) {
     logger.error(err);
@@ -242,14 +242,14 @@ const verifyEmail = async (userId, userEmailId, { token }) => {
   let deletedEmailVerification;
   if (!userEmail.verified) {
     [err, deletedEmailVerification] = await to(db.transaction(t => {
-      return UserEmailVerifications.destroy({
+      return UserEmailVerification.destroy({
         where: {
           userEmailId: userEmail.id,
           token
         },
         transaction: t
       }).then(updatedUserEmail => {
-        return UserEmails.update({ verified: '1' }, {
+        return UserEmail.update({ verified: '1' }, {
           where: {
             id: userEmail.id
           },
@@ -264,7 +264,7 @@ const verifyEmail = async (userId, userEmailId, { token }) => {
       return makeRes(400, 'Unable to verify email address.');
     }
   } else {
-    [err, deletedEmailVerification] = await to(UserEmailVerifications.destroy({
+    [err, deletedEmailVerification] = await to(UserEmailVerification.destroy({
       where: {
         userEmailId: userEmail.id
       }
@@ -281,14 +281,14 @@ const verifyEmail = async (userId, userEmailId, { token }) => {
 
 const hasPermission = async (userId, organizationId, permission) => {
   let err, organizationUser;
-  [err, organizationUser] = await to(OrganizationUsers.findOne({ where: { userId, organizationId }}));
+  [err, organizationUser] = await to(OrganizationUser.findOne({ where: { userId, organizationId }}));
   
   if (err || !organizationUser) {
     return [err, false];
   } else if (organizationUser.role === 'owner') {
     return [null, true];
   } else {
-    [err, orgUserPermissions] = await to(OrganizationUserPermissions.findOne({ where: { organizationUserId: organizationUser.id, permission }}));
+    [err, orgUserPermissions] = await to(OrganizationUserPermission.findOne({ where: { organizationUserId: organizationUser.id, permission }}));
     if (err || !orgUserPermissions) {
       return [err, false];
     } else {

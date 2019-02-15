@@ -2,7 +2,7 @@ const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const { hasPermission } = require('./UserController');
 const Invoice = require('../../db').model('invoice');
-const InvoiceItems = require('../../db').model('invoiceItems');
+const InvoiceItem = require('../../db').model('invoiceItem');
 
 const create = async (userId, invoice) => {
   const generalError = 'Unable to create new invoice.';

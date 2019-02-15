@@ -18,28 +18,28 @@ db
       console.error('Unable to connect to the database:', err);
   });
 
-const OrganizationUserPermissions = db.import('./src/models/OrganizationUserPermissions');
-const OrganizationUsers = db.import('./src/models/OrganizationUsers');
+const OrganizationUserPermission = db.import('./src/models/OrganizationUserPermission');
+const OrganizationUser = db.import('./src/models/OrganizationUser');
 const Invoice = db.import('./src/models/Invoice');
-const InvoiceItems = db.import('./src/models/InvoiceItems');
+const InvoiceItem = db.import('./src/models/InvoiceItem');
 const Organization = db.import('./src/models/Organization');
-const UserEmailVerifications = db.import('./src/models/UserEmailVerifications');
-const UserEmails = db.import('./src/models/UserEmails');
+const UserEmailVerification = db.import('./src/models/UserEmailVerification');
+const UserEmail = db.import('./src/models/UserEmail');
 const User = db.import('./src/models/User');
 
 // Model associations
-User.hasMany(UserEmails);
-UserEmails.belongsTo(User);
+User.hasMany(UserEmail);
+UserEmail.belongsTo(User);
 
-UserEmailVerifications.belongsTo(UserEmails);
+UserEmailVerification.belongsTo(UserEmail);
 
-User.belongsToMany(Organization, { through: OrganizationUsers });
-Organization.belongsToMany(User, { through: OrganizationUsers });
+User.belongsToMany(Organization, { through: OrganizationUser });
+Organization.belongsToMany(User, { through: OrganizationUser });
 
 Organization.hasMany(Invoice);
 Invoice.belongsTo(Organization);
 
-OrganizationUsers.hasMany(OrganizationUserPermissions);
-Invoice.hasMany(InvoiceItems);
+OrganizationUser.hasMany(OrganizationUserPermission);
+Invoice.hasMany(InvoiceItem);
   
 module.exports = db;

@@ -23,6 +23,21 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Invalid organization logo.'
         }
       }
+    },
+    status: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: '0',
+      validate: {
+        isInt: {
+          args: true,
+          msg: 'Invalid organization status code.'
+        },
+        notEmpty: {
+          args: true,
+          msg: 'Invalid organization status code.'
+        }
+      }
     }
   });
 };

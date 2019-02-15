@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('organizationUserPermissions', {
+  return sequelize.define('organizationUserPermission', {
     permission: {
       type: DataTypes.STRING,
       allowNull: false,

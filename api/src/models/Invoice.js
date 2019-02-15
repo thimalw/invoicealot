@@ -50,14 +50,14 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
-    state: {
-      type: DataTypes.STRING,
-      defaultValue: 'draft',
+    status: {
+      type: DataTypes.INTEGER,
+      defaultValue: '-2',
       allowNull: false,
       validate: {
         isIn: {
-          args: [['saved', 'draft']],
-          msg: 'Invalid invoice state.'
+          args: [['-2', '-1', '0', '1', '2']],
+          msg: 'Invalid invoice status.'
         }
       }
     }
