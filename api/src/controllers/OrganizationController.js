@@ -1,10 +1,12 @@
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const db = require('../../db');
 const Organization = require('../../db').model('organization');
 const User = require('../../db').model('user');
 const OrganizationUser = require('../../db').model('organizationUser');
 const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
 const { hasPermission } = require('./UserController');
+const UserInvoiceController = require('./UserInvoiceController');
 
 const create = async (userId, organization) => {
   let err, user;
@@ -17,25 +19,42 @@ const create = async (userId, organization) => {
   } else if (!user) {
     return makeRes(400, 'Unable to create new organization.', resErrors(['Invalid user.']));
   }
+
+  organization.paymentDue = Date.now();
   
   let savedOrganization;
-  [err, savedOrganization] = await to(Organization.create(organization));
-  if (err) {
-    logger.error(err);
-    const fieldErrors = filterSqlErrors(err);
-    return makeRes(400, 'Unable to create new organization.', fieldErrors);
-  }
-  
-  [err, savedOrgUser] = await to(user.addOrganization(savedOrganization, { through: { role: 'owner' }}));
+  [err, savedOrganization] = await to(db.transaction(t => {
+    return Organization.create(organization, {
+      fields: ['name', 'organizationPlanId', 'paymentDue'],
+      transaction: t
+    }).then(async newOrganization => {
+      const savedOrgUser = await user.addOrganization(newOrganization, {
+        through: {
+          role: 'owner'
+        },
+        transaction: t
+      });
+
+      return {
+        ...newOrganization,
+        organizationUser: savedOrgUser
+      };
+    });
+  }));
+
   if (err) {
     logger.error(err);
     const fieldErrors = filterSqlErrors(err);
     return makeRes(400, 'Unable to create new organization.', fieldErrors);
   }
 
+  let userInvoice;
+  [err, userInvoice] = await to(UserInvoiceController.create(savedOrganization.dataValues.id, true, false));
+  
   return makeRes(200, 'Organization created successfully.', {
     organization: {
-      id: savedOrganization.id
+      id: savedOrganization.dataValues.id,
+      paid: userInvoice.paid
     }
   });
 };

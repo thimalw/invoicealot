@@ -1,22 +1,8 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('userInvoiceItem', {
+  return sequelize.define('organizationPlan', {
     name: {
       type: DataTypes.STRING,
       allowNull: false
-    },
-    quantity: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        isInt: {
-          args: true,
-          msg: 'Quantity is invalid.'
-        }
-      }
-    },
-    description: {
-      type: DataTypes.STRING,
-      allowNull: true
     },
     price: {
       type: DataTypes.DECIMAL(10, 2),
@@ -31,6 +17,20 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Invalid price.'
         }
       }
+    },
+    cycle: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'm'
+    },
+    stock: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    active: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: '1'
     }
   });
 };

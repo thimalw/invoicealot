@@ -1,16 +1,17 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const mailer = require('../utils/mailer');
 const db = require('../../db');
-
 const User = require('../../db').model('user');
 const UserEmail = require('../../db').model('userEmail');
 const UserEmailVerification = require('../../db').model('userEmailVerification');
+const UserInvoice = require('../../db').model('userInvoice');
+const UserInvoiceItem = require('../../db').model('userInvoiceItem');
 const Organization = require('../../db').model('organization');
 const OrganizationUser = require('../../db').model('organizationUser');
+const OrganizationPlan = require('../../db').model('organizationPlan');
 const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
 
 const create = async (user) => {
@@ -70,7 +71,7 @@ const create = async (user) => {
     [err, mailSent] = await to(mailer.mailUser(savedUser.dataValues.id, 'user.create', { emailToken }));
 
     if (err) {
-      console.log(err);
+      console.log(err); // TODO
     }
 
     return makeRes(200, 'User registered.', {
@@ -96,7 +97,6 @@ const update = async (userId, user) => {
 
   if (err) {
     logger.error(err);
-    console.log(err);
     const fieldErrors = filterSqlErrors(err);
     return makeRes(400, 'Unable to update user details.', fieldErrors);
   }

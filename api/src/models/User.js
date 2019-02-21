@@ -49,13 +49,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: '0.00',
       validate: {
-        isDecimal: {
-          args: true,
-          msg: 'Invalid user credit value.'
-        },
+        // isNumeric: {
+        //   args: true,
+        //   msg: 'Invalid credit value.'
+        // },
         notEmpty: {
           args: true,
-          msg: 'Invalid user credit value.'
+          msg: 'Invalid credit value.'
         }
       }
     }

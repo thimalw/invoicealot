@@ -1,3 +1,6 @@
+const Sequelize = require('sequelize');
+const { to } = require('../utils/helpers');
+
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('organization', {
     name: {
@@ -24,10 +27,21 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    paymentDue: {
+      type: DataTypes.DATEONLY,
+      defaultValue: Sequelize.NOW,
+      allowNull: false,
+      validate: {
+        isDate: {
+          args: true,
+          msg: 'Invalid organization data.'
+        }
+      }
+    },
     status: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: '0',
+      defaultValue: '-2',
       validate: {
         isInt: {
           args: true,
@@ -36,6 +50,40 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: {
           args: true,
           msg: 'Invalid organization status code.'
+        }
+      }
+    }
+  }, {
+    hooks: {
+      afterValidate: async (organization) => {
+        const OrganizationPlan = sequelize.models.organizationPlan;
+        
+        let err, organizationPlan;
+        [err, organizationPlan] = await to(OrganizationPlan.findOne({
+          where: {
+            id: organization.organizationPlanId,
+            active: 1
+          }
+        }));
+
+        if (err) {
+          throw err;
+        } else if (!organizationPlan) {
+          throw {
+            errors: [{
+              validatorKey: 'allFields',
+              path: 'allFields',
+              message: 'Invalid plan.'
+            }]
+          };
+        } else if (organizationPlan.stock == '0') {
+          throw {
+            errors: [{
+              validatorKey: 'allFields',
+              path: 'allFields',
+              message: 'Sorry, the plan you have selected is out of stock.'
+            }]
+          };
         }
       }
     }
