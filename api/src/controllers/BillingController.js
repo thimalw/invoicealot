@@ -1,8 +1,10 @@
-const { to } = require('../utils/helpers');
+const crypto = require('crypto');
+const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const db = require('../../db');
 const User = require('../../db').model('user');
 const UserCard = require('../../db').model('userCard');
+const UserTransaction = require('../../db').model('userTransaction');
 const { payhereApi } = require('../utils/payhere');
 
 const pay = async (userId, amount) => {
@@ -108,6 +110,137 @@ const getCards = async (userId) => {
   return cards;
 };
 
+const payherePreapprove = async (preapproval) => {
+  const payhereSecretHash = crypto.createHash('md5').update(process.env.PAYHERE_SECRET).digest("hex").toUpperCase();
+  const requestHashPre = process.env.PAYHERE_ID + preapproval.order_id + preapproval.payhere_amount + preapproval.payhere_currency + preapproval.status_code + payhereSecretHash;
+  const requestHash = crypto.createHash('md5').update(requestHashPre).digest("hex").toUpperCase();
+  const cardNo = preapproval.card_no; // TODO trim card no
+
+  if (requestHash !== preapproval.md5sig) {
+    return makeRes(401, 'Unauthorized');
+  }
+
+  if (preapproval.status_code != 2) {
+    return makeRes(400, 'Bad request');
+  }
+
+  let err, user;
+  [err, user] = await to(User.findByPk(preapproval.order_id));
+
+  if (err) {
+    logger.error(err);
+    console.log('error1');
+    return makeRes(500, 'Error', fieldErrors);
+  }
+
+  if (!user) {
+    return makeRes(400, 'Bad request');
+  }
+
+  let existingCard;
+  [err, existingCard] = await to(UserCard.findOne({
+    where: {
+      token: preapproval.customer_token
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, 'Error');
+  }
+
+  if (existingCard) {
+    return makeRes(200, 'Card exists');
+  }
+
+  if (preapproval.payment_id && preapproval.payhere_amount) {
+    let processedTransaction;
+    [err, processedTransaction] = await to(UserTransaction.findOne({
+      where: {
+        type: 'payhere',
+        paymentId: preapproval.payment_id
+      }
+    }));
+
+    if (err) {
+      logger.error(err);
+      return makeRes(500, 'Error');
+    }
+
+    if (!processedTransaction) {
+      let addedCredits;
+      [err, addedCredits] = await to(addCredits(user.id, preapproval.payhere_amount));
+
+      if (err) {
+        logger.error(err);
+        console.log('error2');
+        return makeRes(500, 'Error');
+      }
+
+      await to(addTransaction(user.id, preapproval.payhere_amount, `Added credits from card ending ${cardNo}`, 'payhere', preapproval.payment_id));
+    }
+  }
+
+  const card = {
+    name: preapproval.card_holder_name,
+    number: cardNo,
+    token: preapproval.customer_token
+  };
+
+  let cardAdded;
+  [err, cardAdded] = await to(addCard(user.id, card));
+
+  if (err) {
+    logger.error(err);
+    console.log(err);
+    console.log('error3');
+    return makeRes(500, 'Error');
+  }
+
+  if (cardAdded) {
+    return makeRes(200, 'Success');
+  }
+
+  console.log('error4');
+  return makeRes(500, 'Error');
+};
+
+const addCard = async (userId, card) => {
+  let err, user;
+  [err, user] = await to(User.findByPk(userId));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  if (!user) {
+    return false;
+  }
+
+  let cardInstance;
+  [err, cardInstance] = await to(UserCard.create(card));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  let savedCard;
+  [err, savedCard] = await to(user.addUserCard(cardInstance));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  if (savedCard) {
+    return true;
+  }
+
+  return false;
+};
+
 const chargeCard = async (userId, amount) => {
   let charged = false;
   
@@ -149,8 +282,51 @@ const chargeCard = async (userId, amount) => {
   return charged;
 };
 
+const addTransaction = async (userId, amount, description, type, paymentId) => {
+  description = typeof description === 'undefined' ? null : description;
+  type = typeof type === 'undefined' ? null : type;
+  paymentId = typeof paymentId === 'undefined' ? null : paymentId;
+
+  let err, user;
+  [err, user] = await to(User.findByPk(userId));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  if (!user) {
+    return false;
+  }
+
+  let savedTransaction;
+  [err, savedTransaction] = await to(UserTransaction.create({
+    amount,
+    description,
+    type,
+    paymentId
+  }));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  let savedUserTransaction;
+  [err, savedUserTransaction] = await to(user.addTransaction(savedTransaction));
+
+  if (err) {
+    logger.error(err);
+    throw err;
+  }
+
+  return true;
+};
+
 module.exports = {
   pay,
   getCredits,
-  addCredits
+  addCredits,
+  payherePreapprove,
+  addTransaction
 };
