@@ -273,6 +273,7 @@ const chargeCard = async (userId, amount) => {
 
     if (cardCharged.data.status === 1 && (cardCharged.data.data.status_code === 2 || cardCharged.data.data.status_code === 0) && cardCharged.data.data.currency === 'USD') {
       charged = true;
+      await to(addTransaction(userId, cardCharged.data.data.amount, `Added credits from card ending ${card.number}`, 'payhere', cardCharged.data.data.payment_id));
       await to(addCredits(userId, cardCharged.data.data.amount));
 
       break;

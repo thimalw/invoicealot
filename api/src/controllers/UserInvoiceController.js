@@ -7,12 +7,11 @@ const UserInvoice = require('../../db').model('userInvoice');
 const UserInvoiceItem = require('../../db').model('userInvoiceItem');
 const Organization = require('../../db').model('organization');
 const OrganizationPlan = require('../../db').model('organizationPlan');
-const UserController = require('./UserController');
 const BillingController = require('./BillingController');
 
 const create = async (organizationId, charge, notify) => {
   charge = typeof charge !== 'undefined' ? charge : true;
-  notify = typeof notify !== 'undefined' ? notify : true;
+  notify = typeof notify !== 'undefined' ? notify : true; // TODO add email notifications
 
   let paid = false;
 
@@ -113,6 +112,7 @@ const pay = async (userInvoiceId, notify) => {
   let err, userInvoice;
   [err, userInvoice] = await to(UserInvoice.findByPk(userInvoiceId, {
     attributes: [
+      'id',
       'status',
       'userId',
       'organizationId',
@@ -156,8 +156,7 @@ const pay = async (userInvoiceId, notify) => {
   }
   
   if (paid) {
-    let savedUserTransaction;
-    // [err, savedUserTransaction] = await to(BillingController.addTransaction(userInvoice.dataValues.userId, userInvoice.dataValues.total, `Payment for invoice #${userInvoice.dataValues.id}`));
+    await to(BillingController.addTransaction(userInvoice.dataValues.userId, userInvoice.dataValues.total, `Payment for invoice #${userInvoice.dataValues.id}`));
     
     let updateUserInvoice;
     [err, updateUserInvoice] = await to(UserInvoice.update({ status: 1 }, {
