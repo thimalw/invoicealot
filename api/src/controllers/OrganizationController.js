@@ -1,11 +1,12 @@
-const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
-const logger = require('../utils/logger');
 const db = require('../../db');
+const logger = require('../utils/logger');
+const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
+const { hasPermission } = require('./UserController');
 const Organization = require('../../db').model('organization');
+const OrganizationPlan = require('../../db').model('organizationPlan');
+const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
 const User = require('../../db').model('user');
 const OrganizationUser = require('../../db').model('organizationUser');
-const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
-const { hasPermission } = require('./UserController');
 const UserInvoiceController = require('./UserInvoiceController');
 
 const create = async (userId, organization) => {
@@ -219,10 +220,40 @@ const isOrganizationOwned = async (userId, organizationId) => {
   return err, result;
 }
 
+const listPlans = async (userId) => {
+  let err, organizationPlans;
+  [err, organizationPlans] = await to(OrganizationPlan.findAll({
+    where: {
+      active: 1,
+      stock: {
+        [db.Op.or]: {
+          [db.Op.eq]: -1,
+          [db.Op.gt]: 0
+        }
+      }
+    },
+    attributes: [
+      'id',
+      'name',
+      'price',
+      'cycle'
+    ]
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, 'Unable to retrieve organization plans.', fieldErrors);
+  }
+
+  return makeRes(200, 'Organization plans retrieved.', { organizationPlans });
+};
+
 module.exports = {
   create,
   list,
   get,
   addUser,
-  isOrganizationOwned
+  isOrganizationOwned,
+  listPlans
 };

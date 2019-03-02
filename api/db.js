@@ -23,6 +23,7 @@ const InvoiceItem = db.import('./src/models/InvoiceItem');
 const OrganizationUserPermission = db.import('./src/models/OrganizationUserPermission');
 const OrganizationUser = db.import('./src/models/OrganizationUser');
 const OrganizationPlan = db.import('./src/models/OrganizationPlan');
+const OrganizationPlanFeature = db.import('./src/models/OrganizationPlanFeature');
 const UserCard = db.import('./src/models/UserCard');
 const UserTransaction = db.import('./src/models/UserTransaction');
 const Organization = db.import('./src/models/Organization');
@@ -51,6 +52,9 @@ Organization.belongsToMany(User, { through: OrganizationUser });
 OrganizationPlan.hasMany(Organization);
 Organization.belongsTo(OrganizationPlan);
 
+OrganizationPlan.hasMany(OrganizationPlanFeature);
+OrganizationPlanFeature.belongsTo(OrganizationPlan);
+
 User.hasMany(UserCard);
 UserCard.belongsTo(User);
 
@@ -61,6 +65,7 @@ Organization.hasMany(Invoice);
 Invoice.belongsTo(Organization);
 
 OrganizationUser.hasMany(OrganizationUserPermission);
+
 Invoice.hasMany(InvoiceItem);
 InvoiceItem.belongsTo(Invoice);
   
