@@ -19,6 +19,16 @@ router.post('/:organizationId/users', passport.authenticate('jwt', { session: fa
 });
 
 // Invoices
+router.delete('/:organizationId/invoices/:invoiceId/items/:invoiceItemId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  const invoiceItem = await InvoiceController.destroyInvoiceItem(req.user.id, req.params.organizationId, req.params.invoiceId, req.params.invoiceItemId);
+  res.status(invoiceItem.status).send(invoiceItem);
+});
+
+router.put('/:organizationId/invoices/:invoiceId/items/:invoiceItemId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  const invoiceItem = await InvoiceController.updateInvoiceItem(req.user.id, req.params.organizationId, req.params.invoiceId, req.params.invoiceItemId, req.body);
+  res.status(invoiceItem.status).send(invoiceItem);
+});
+
 router.post('/:organizationId/invoices/:invoiceId/items', passport.authenticate('jwt', { session: false }), async (req, res) => {
   const invoiceItem = await InvoiceController.createInvoiceItem(req.user.id, req.params.organizationId, req.params.invoiceId, req.body);
   res.status(invoiceItem.status).send(invoiceItem);

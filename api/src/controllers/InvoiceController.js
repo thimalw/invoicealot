@@ -191,8 +191,8 @@ const destroy = async (userId, organizationId, invoiceId) => {
     return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to access invoices in this organization.']));
   }
 
-  let destroyedInvoices;
-  [err, destroyedInvoices] = await to(Invoice.destroy({
+  let destroyedInvoice;
+  [err, destroyedInvoice] = await to(Invoice.destroy({
     where: {
       id: invoiceId,
       organizationId: organizationId
@@ -205,7 +205,7 @@ const destroy = async (userId, organizationId, invoiceId) => {
     return makeRes(400, generalError, fieldErrors);
   }
 
-  return makeRes(200, 'Invoices deleted.');
+  return makeRes(200, 'Invoice deleted.');
 };
 
 const update = async (userId, organizationId, invoiceId, invoice) => {
@@ -273,7 +273,7 @@ const createInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem)
   }
 
   if (!invoice) {
-    return makeRes(401, 'Invoice not found.');
+    return makeRes(401, generalError, resErrors(['Invoice not found.']));
   }
 
   let savedInvoiceItem;
@@ -306,11 +306,112 @@ const createInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem)
   });
 };
 
+const updateInvoiceItem = async (userId, organizationId, invoiceId, invoiceItemId, invoiceItem) => {
+  const generalError = 'Unable to update invoice item.';
+
+  let err, hasPermissionRes;
+  [err, hasPermissionRes] = await hasPermission(userId, organizationId, 'invoice');
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+  } else if (!hasPermissionRes) {
+    return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to access invoices in this organization.']));
+  }
+
+  let invoice;
+  [err, invoice] = await to(Invoice.findOne({
+    where: {
+      id: invoiceId,
+      organizationId: organizationId
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError);
+  }
+
+  if (!invoice) {
+    return makeRes(401, generalError, resErrors(['Invoice not found.']));
+  }
+
+  let updatedInvoiceItem;
+  [err, updatedInvoiceItem] = await to(InvoiceItem.update(invoiceItem, {
+    where: {
+      id: invoiceItemId,
+      invoiceId: invoiceId
+    },
+    fields: [
+      'name',
+      'quantity',
+      'price'
+    ]
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, generalError, fieldErrors);
+  }
+
+  return makeRes(200, 'Invoice item updated.');
+};
+
+const destroyInvoiceItem = async (userId, organizationId, invoiceId, invoiceItemId) => {
+  const generalError = 'Unable to delete invoice item.';
+
+  let err, hasPermissionRes;
+  [err, hasPermissionRes] = await hasPermission(userId, organizationId, 'invoice');
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+  } else if (!hasPermissionRes) {
+    return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to access invoices in this organization.']));
+  }
+
+  let invoice;
+  [err, invoice] = await to(Invoice.findOne({
+    where: {
+      id: invoiceId,
+      organizationId: organizationId
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError);
+  }
+
+  if (!invoice) {
+    return makeRes(401, generalError, resErrors(['Invoice not found.']));
+  }
+
+  let destroyedInvoiceItem;
+  [err, destroyedInvoiceItem] = await to(InvoiceItem.destroy({
+    where: {
+      id: invoiceItemId,
+      invoiceId: invoiceId
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, generalError, fieldErrors);
+  }
+
+  return makeRes(200, 'Invoice item deleted.');
+};
+
 module.exports = {
   create,
   list,
   get,
   destroy,
   update,
-  createInvoiceItem
+  createInvoiceItem,
+  updateInvoiceItem,
+  destroyInvoiceItem
 };
