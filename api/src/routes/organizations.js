@@ -21,6 +21,11 @@ router.get('/:organizationId/invoices/:invoiceId', passport.authenticate('jwt', 
   res.status(invoice.status).send(invoice);
 });
 
+router.delete('/:organizationId/invoices/:invoiceId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  const invoice = await InvoiceController.destroy(req.user.id, req.params.organizationId, req.params.invoiceId);
+  res.status(invoice.status).send(invoice);
+});
+
 router.get('/:organizationId/invoices', passport.authenticate('jwt', { session: false }), async (req, res) => {
   const invoices = await InvoiceController.list(req.user.id, req.params.organizationId, 'invoice');
   res.status(invoices.status).send(invoices);

@@ -66,7 +66,7 @@ Invoice.belongsTo(Organization);
 
 OrganizationUser.hasMany(OrganizationUserPermission);
 
-Invoice.hasMany(InvoiceItem);
+Invoice.hasMany(InvoiceItem, { onDelete: 'CASCADE' });
 InvoiceItem.belongsTo(Invoice);
   
 module.exports = db;
