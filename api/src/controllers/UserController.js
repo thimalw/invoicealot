@@ -297,11 +297,40 @@ const hasPermission = async (userId, organizationId, permission) => {
   }
 };
 
+const isVerified = async (userId) => {
+  let err, verifiedUser;
+  [err, verifiedUser] = await to(User.findOne({
+    where: {
+      id: userId
+    },
+    include: [
+      {
+        model: UserEmail,
+        attributes: [],
+        where: {
+          verified: '1'
+        }
+      }
+    ]
+  }));
+
+  if (err) {
+    throw err;
+  }
+
+  if (verifiedUser) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
 module.exports = {
   create,
   update,
   updatePassword,
   authenticate,
   verifyEmail,
-  hasPermission
+  hasPermission,
+  isVerified
 };

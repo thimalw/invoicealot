@@ -1,7 +1,7 @@
 const db = require('../../db');
 const logger = require('../utils/logger');
 const { makeRes, to, filterSqlErrors, resErrors } = require('../utils/helpers');
-const { hasPermission } = require('./UserController');
+const { hasPermission, isVerified } = require('./UserController');
 const Organization = require('../../db').model('organization');
 const OrganizationPlan = require('../../db').model('organizationPlan');
 const OrganizationUserPermission = require('../../db').model('organizationUserPermission');
@@ -19,6 +19,18 @@ const create = async (userId, organization) => {
     return makeRes(400, 'Unable to create new organization.', fieldErrors);
   } else if (!user) {
     return makeRes(400, 'Unable to create new organization.', resErrors(['Invalid user.']));
+  }
+
+  let userVerified;
+  [err, userVerified] = await to(isVerified(userId));
+  
+  if (err) {
+    logger.error(err);
+    return makeRes(500, 'Unable to create new organization.');
+  }
+
+  if (!userVerified) {
+    return makeRes(400, 'Unable to create new organization.', resErrors(['Please verify your email address before creating an organization.']));
   }
 
   organization.paymentDue = Date.now();
