@@ -208,9 +208,48 @@ const destroy = async (userId, organizationId, invoiceId) => {
   return makeRes(200, 'Invoices deleted.');
 };
 
+const update = async (userId, organizationId, invoiceId, invoice) => {
+  const generalError = 'Unable to update invoice.';
+
+  let err, hasPermissionRes;
+  [err, hasPermissionRes] = await hasPermission(userId, organizationId, 'invoice');
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+  } else if (!hasPermissionRes) {
+    return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to access invoices in this organization.']));
+  }
+
+  let updatedInvoice;
+  [err, updatedInvoice] = await to(Invoice.update(invoice, {
+    where: {
+      id: invoiceId,
+      organizationId: organizationId
+    },
+    fields: [
+      'number',
+      'type',
+      'dueDate',
+      'notes',
+      'footer',
+      'status'
+    ]
+  }));
+
+  if (err) {
+    logger.error(err);
+    const fieldErrors = filterSqlErrors(err);
+    return makeRes(400, generalError, fieldErrors);
+  }
+
+  return makeRes(200, 'Invoice updated.');
+};
+
 module.exports = {
   create,
   list,
   get,
-  destroy
+  destroy,
+  update
 };
