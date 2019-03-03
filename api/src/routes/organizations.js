@@ -6,14 +6,22 @@ const InvoiceController = require('../controllers/InvoiceController');
 
 passport.use(jwtStrategy);
 
+// Plans
 router.get('/plans', passport.authenticate('jwt', { session: false }), async (req, res) => {
   const organizationPlans = await OrganizationController.listPlans(req.user.id);
   res.status(organizationPlans.status).send(organizationPlans);
 });
 
+// Organization users
 router.post('/:organizationId/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
   const organizationUser = await OrganizationController.addUser(req.user.id, req.params.organizationId, req.body);
   res.status(organizationUser.status).send(organizationUser);
+});
+
+// Invoices
+router.post('/:organizationId/invoices/:invoiceId/items', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  const invoiceItem = await InvoiceController.createInvoiceItem(req.user.id, req.params.organizationId, req.params.invoiceId, req.body);
+  res.status(invoiceItem.status).send(invoiceItem);
 });
 
 router.get('/:organizationId/invoices/:invoiceId', passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -41,6 +49,7 @@ router.post('/:organizationId/invoices', passport.authenticate('jwt', { session:
   res.status(invoice.status).send(invoice);
 });
 
+// Organizations
 router.get('/:organizationId', passport.authenticate('jwt', { session: false }), async (req, res) => {
   const organization = await OrganizationController.get(req.user.id, req.params.organizationId);
   res.status(organization.status).send(organization);

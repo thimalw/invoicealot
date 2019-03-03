@@ -246,10 +246,71 @@ const update = async (userId, organizationId, invoiceId, invoice) => {
   return makeRes(200, 'Invoice updated.');
 };
 
+const createInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem) => {
+  const generalError = 'Unable to add invoice item.';
+
+  let err, hasPermissionRes;
+  [err, hasPermissionRes] = await hasPermission(userId, organizationId, 'invoice');
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError, resErrors(['Please try again. If the error continues, contact support.']));
+  } else if (!hasPermissionRes) {
+    return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to access invoices in this organization.']));
+  }
+
+  let invoice;
+  [err, invoice] = await to(Invoice.findOne({
+    where: {
+      id: invoiceId,
+      organizationId: organizationId
+    }
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError);
+  }
+
+  if (!invoice) {
+    return makeRes(401, 'Invoice not found.');
+  }
+
+  let savedInvoiceItem;
+  [err, savedInvoiceItem] = await to(db.transaction(t => {
+    return InvoiceItem.create(invoiceItem, {
+      fields: [
+        'name',
+        'quantity',
+        'price'
+      ],
+      transaction: t
+    }).then(async newInvoiceItem => {
+      const addedInvoiceItem = invoice.addInvoiceItem(newInvoiceItem);
+      return {
+        id: newInvoiceItem.dataValues.id
+      };
+    });
+  }));
+
+  if (err) {
+    logger.error(err);
+    console.log(err);
+    return makeRes(500, generalError);
+  }
+
+  return makeRes(200, 'Added invoice item.', {
+    invoiceItem: {
+      id: savedInvoiceItem.id
+    }
+  });
+};
+
 module.exports = {
   create,
   list,
   get,
   destroy,
-  update
+  update,
+  createInvoiceItem
 };
