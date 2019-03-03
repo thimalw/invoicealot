@@ -314,7 +314,7 @@ const addTransaction = async (userId, amount, description, type, paymentId) => {
   }
 
   let savedUserTransaction;
-  [err, savedUserTransaction] = await to(user.addTransaction(savedTransaction));
+  [err, savedUserTransaction] = await to(user.addUserTransaction(savedTransaction));
 
   if (err) {
     logger.error(err);
