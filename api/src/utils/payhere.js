@@ -19,7 +19,7 @@ const authApi = axios.create({
 
 payhereApi.interceptors.request.use(async (config) => {
   accessToken = cache.get('payhere-access-token');
-  if (accessToken == undefined) {
+  if (accessToken == undefined || !accessToken) {
     let err, res;
     [err, res] = await to(authApi.post('/oauth/token', querystring.stringify({
       grant_type: 'client_credentials'
