@@ -19,25 +19,55 @@ const create = async (userId, organizationId, invoice) => {
     return makeRes(403, generalError, resErrors(['Sorry, you don\'t have permission to create invoices in this organization.']));
   }
 
-  invoice.organizationId = organizationId;
-  
-  let savedInvoice;
-  [err, savedInvoice] = await to(Invoice.create(invoice), {
-    fields: [
-      'organizationId',
-      'number',
-      'type',
-      'dueDate',
-      'notes',
-      'footer',
-      'state'
-    ]
-  });
+  let organization;
+  [err, organization] = await to(Organization.findOne({
+    where: {
+      id: organizationId
+    }
+  }));
 
   if (err) {
     logger.error(err);
-    const fieldErrors = filterSqlErrors(err);
-    return makeRes(401, generalError, fieldErrors);
+    return makeRes(500, generalError);
+  }
+
+  if (!organization) {
+    return makeRes(404, generalError, resErrors(['Organization not found.']));
+  }
+
+  invoice.number = organization.nextInvoiceNumber;
+
+  let savedInvoice;
+  [err, savedInvoice] = await to(db.transaction(t => {
+    return Invoice.create(invoice, {
+      fields: [
+        'number',
+        'type',
+        'dueDate',
+        'notes',
+        'footer',
+        'state'
+      ],
+      transaction: t
+    }).then(async newInvoice => {
+      await organization.addInvoice(newInvoice, {
+        transaction: t
+      });
+      
+      return newInvoice;
+    }).then(async newInvoice => {
+      await organization.increment('nextInvoiceNumber', {
+        by: 1,
+        transaction: t
+      });
+
+      return newInvoice;
+    });
+  }));
+
+  if (err) {
+    logger.error(err);
+    return makeRes(500, generalError);
   }
 
   return makeRes(200, 'Invoice created successfully.', {
@@ -88,6 +118,9 @@ const list = async (userId, organizationId, type) => {
       'dueDate',
       'status',
       'createdAt'
+    ],
+    order: [
+      ['id', 'DESC']
     ],
     group: ['invoice.id', 'invoiceItems.invoiceId'],
   }));
@@ -273,7 +306,7 @@ const createInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem)
   }
 
   if (!invoice) {
-    return makeRes(401, generalError, resErrors(['Invoice not found.']));
+    return makeRes(404, generalError, resErrors(['Invoice not found.']));
   }
 
   let savedInvoiceItem;
@@ -286,7 +319,9 @@ const createInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem)
       ],
       transaction: t
     }).then(async newInvoiceItem => {
-      const addedInvoiceItem = invoice.addInvoiceItem(newInvoiceItem);
+      const addedInvoiceItem = invoice.addInvoiceItem(newInvoiceItem, {
+        transaction: t
+      });
       return {
         id: newInvoiceItem.dataValues.id
       };
@@ -333,7 +368,7 @@ const updateInvoiceItem = async (userId, organizationId, invoiceId, invoiceItemI
   }
 
   if (!invoice) {
-    return makeRes(401, generalError, resErrors(['Invoice not found.']));
+    return makeRes(404, generalError, resErrors(['Invoice not found.']));
   }
 
   let updatedInvoiceItem;
@@ -385,7 +420,7 @@ const destroyInvoiceItem = async (userId, organizationId, invoiceId, invoiceItem
   }
 
   if (!invoice) {
-    return makeRes(401, generalError, resErrors(['Invoice not found.']));
+    return makeRes(404, generalError, resErrors(['Invoice not found.']));
   }
 
   let destroyedInvoiceItem;

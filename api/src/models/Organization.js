@@ -38,6 +38,11 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    nextInvoiceNumber: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: '1'
+    },
     status: {
       type: DataTypes.INTEGER,
       allowNull: false,
